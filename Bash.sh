@@ -1,53 +1,19 @@
 #!/bin/bash
 
-usage() {
-    echo "Usage: $0 [-t target] [-p port_range]"
-    echo "  -t target       Target IP address or domain name"
-    echo "  -p port_range   Port range to scan (e.g., '1-1000')"
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <target_ip>"
     exit 1
-}
-
-
-while getopts ":t:p:" opt; do
-    case ${opt} in
-        t )
-            target=$OPTARG
-            ;;
-        p )
-            port_range=$OPTARG
-            ;;
-        \? )
-            echo "Invalid option: $OPTARG" 1>&2
-            usage
-            ;;
-        : )
-            echo "Option -$OPTARG requires an argument." 1>&2
-            usage
-            ;;
-    esac
-done
-shift $((OPTIND -1))
-
-
-if [ -z "$target" ] || [ -z "$port_range" ]; then
-    echo "Error: Target and port range are required."
-    usage
 fi
 
+target_ip=$1
 
-port_scan() {
-    target=$1
-    port=$2
-    timeout 1 bash -c "echo >/dev/tcp/$target/$port" 2>/dev/null && echo "Port $port is open"
-}
+start_port=1
+end_port=1024
 
-echo "Scanning ports $port_range on $target..."
+echo "Scanning ports on $target_ip from $start_port to $end_port..."
 
-
-for port in $(seq $(echo $port_range | cut -d'-' -f1) $(echo $port_range | cut -d'-' -f2)); do
-    port_scan $target $port &
+for port in $(seq $start_port $end_port); do
+    (echo >/dev/tcp/$target_ip/$port) &>/dev/null && echo "Port $port is open"
 done
 
-wait
-
-echo "Port scan complete."
+echo "Scan complete!"
